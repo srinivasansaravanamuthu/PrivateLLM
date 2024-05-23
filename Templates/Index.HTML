@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chatbot</title>
+    <style>
+        /* General styles */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        
+        /* Container for the entire chat application */
+        #chat-container {
+            width: 400px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        /* Chat window where messages are displayed */
+        #chat-window {
+            height: 400px;
+            border-bottom: 1px solid #ccc;
+            overflow-y: scroll;
+            padding: 20px;
+        }
+
+        /* Input field and send button container */
+        #input-container {
+            display: flex;
+            padding: 10px;
+            background-color: #f4f4f9;
+        }
+
+        /* Input field for user messages */
+        #user-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-right: 10px;
+            font-size: 16px;
+        }
+
+        /* Send button */
+        #send-button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            border: none;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        #send-button:hover {
+            background-color: #0056b3;
+        }
+
+        /* Styling for each chat message */
+        .chat-message {
+            margin-bottom: 10px;
+            clear: both;
+        }
+
+        /* Styling for user messages */
+        .chat-message.user {
+            text-align: right;
+        }
+
+        .chat-message.user .message {
+            background-color: #007bff;
+            color: white;
+            border-radius: 15px 15px 0 15px;
+        }
+
+        /* Styling for bot messages */
+        .chat-message.bot {
+            text-align: left;
+        }
+
+        .chat-message.bot .message {
+            background-color: #f1f1f1;
+            color: black;
+            border-radius: 15px 15px 15px 0;
+        }
+
+        /* Common styling for message text */
+        .message {
+            display: inline-block;
+            padding: 10px 15px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+
+        /* Styling for response time */
+        .chat-message em {
+            display: block;
+            font-size: 0.8em;
+            color: #888; /* Lighter color for less emphasis */
+        }
+    </style>
+</head>
+<body>
+    <!-- Container for the chat interface -->
+    <div id="chat-container">
+        <!-- Window where chat messages appear -->
+        <div id="chat-window"></div>
+        <!-- Input field and send button container -->
+        <div id="input-container">
+            <input type="text" id="user-input" placeholder="Type a message...">
+            <button id="send-button">Send</button>
+        </div>
+    </div>
+
+    <script>
+        // Function to append a message to the chat window
+        function appendMessage(sender, text, responseTime = null) {
+            const chatWindow = document.getElementById('chat-window');
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('chat-message', sender);
+
+            const messageText = document.createElement('div');
+            messageText.classList.add('message');
+            messageText.textContent = text;
+            messageElement.appendChild(messageText);
+
+            if (responseTime) {
+                const timeElement = document.createElement('em');
+                timeElement.textContent = `Query took: ${responseTime.toFixed(2)} seconds`;
+                messageElement.appendChild(timeElement);
+            }
+
+            chatWindow.appendChild(messageElement);
+            chatWindow.scrollTop = chatWindow.scrollHeight; // Auto-scroll to the bottom
+        }
+
+        document.getElementById('send-button').addEventListener('click', async () => {
+            const userInput = document.getElementById('user-input').value;
+            if (!userInput.trim()) return; // Do not send empty messages
+            document.getElementById('user-input').value = '';
+
+            appendMessage('user', userInput); // Append user's message
+
+            // Send user input to the backend
+            const response = await fetch('/get', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ msg: userInput }) // Convert input to JSON
+            });
+
+            // Get response data from the backend
+            const data = await response.json();
+            if (data.error) {
+                appendMessage('bot', data.error); // Append bot's error message
+            } else {
+                appendMessage('bot', data.response, data.response_time); // Append bot's response and response time
+            }
+        });
+
+        // Allow pressing Enter key to send message
+        document.getElementById('user-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('send-button').click();
+            }
+        });
+    </script>
+</body>
+</html>
